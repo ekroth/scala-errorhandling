@@ -1,0 +1,64 @@
+### Gitignore: Scala ###
+## File: https://raw.githubusercontent.com/github/gitignore/master/Scala.gitignore ##
+*.class
+*.log
+
+# sbt specific
+.cache
+.history
+.lib/
+dist/*
+target/
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+
+# Scala-IDE specific
+.scala_dependencies
+.worksheet
+### End: Scala ###
+### Gitignore: Global/Emacs ###
+## File: https://raw.githubusercontent.com/github/gitignore/master/Global/Emacs.gitignore ##
+# -*- mode: gitignore; -*-
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Org-mode
+.org-id-locations
+*_archive
+
+# flymake-mode
+*_flymake.*
+
+# eshell files
+/eshell/history
+/eshell/lastdir
+
+# elpa packages
+/elpa/
+
+# reftex files
+*.rel
+
+# AUCTeX auto folder
+/auto/
+
+# cask packages
+.cask/
+### End: Global/Emacs ###
+### Gitignore: Global/Vim ###
+## File: https://raw.githubusercontent.com/github/gitignore/master/Global/Vim.gitignore ##
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
+*.un~
+Session.vim
+.netrwhist
+*~
+### End: Global/Vim ###
