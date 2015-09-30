@@ -52,5 +52,19 @@ package object errorhandling {
       } map (_.result())
     }
 
+    import scala.concurrent.ExecutionContext
+
+    /** Transforms a `TraversableOnce[Future[Result[A]]]` into a `ResultF[TraversableOnce[A]]`.
+     *  Useful for reducing many `Result`s into a single `Result`. Stops at the first failed
+     *  `Result`.
+     */
+    def sequenceF[A, M[X] <: TraversableOnce[X]](in: M[Future[Result[A]]])(implicit
+      cbff: CanBuildFrom[M[Future[Result[A]]], Result[A], M[Result[A]]],
+      cbfr: CanBuildFrom[M[Result[A]], A, M[A]],
+      exc: ExecutionContext): ResultF[M[A]] = EitherT {
+      for {
+        seq <- Future.sequence(in)
+      } yield Result.sequence(seq)
+    }
   }
 }
