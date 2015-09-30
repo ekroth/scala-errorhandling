@@ -9,7 +9,7 @@ package com.github.ekroth
 package object errorhandling {
 
   import scala.collection.generic.CanBuildFrom
-  import scala.concurrent.Future
+  import scala.concurrent.{ Future, ExecutionContext }
 
   import scalaz._
   import Scalaz._
@@ -36,7 +36,7 @@ package object errorhandling {
     def okF[A](x: Future[Result[A]]): ResultF[A] = EitherT(x)
 
     /** Transforms a `TraversableOnce[Result[A]]` into a `Result[TraversableOnce[A]]`.
-     *  Useful for reducing many `Result`s into a single `Result`. Stops at the first failed
+     *  Useful for reducing many `Result`s into a single `ResultF`. Stops at the first failed
      *  `Result`.
      */
     def sequence[A, M[X] <: TraversableOnce[X]](in: M[Result[A]])(implicit cbf: CanBuildFrom[M[Result[A]], A, M[A]]): Result[M[A]] = {
@@ -52,8 +52,6 @@ package object errorhandling {
       } map (_.result())
     }
 
-    import scala.concurrent.ExecutionContext
-
     /** Transforms a `TraversableOnce[Future[Result[A]]]` into a `ResultF[TraversableOnce[A]]`.
      *  Useful for reducing many `Result`s into a single `Result`. Stops at the first failed
      *  `Result`.
@@ -65,6 +63,18 @@ package object errorhandling {
       for {
         seq <- Future.sequence(in)
       } yield Result.sequence(seq)
+    }
+
+    /** Run all `ResultF` in a `TraversableOnce[ResultF[A]]`. */
+    def run[A, M[X] <: TraversableOnce[X]](in: M[ResultF[A]])(implicit
+      cbff: CanBuildFrom[M[Future[Result[A]]], Result[A], M[Result[A]]],
+      cbfr: CanBuildFrom[M[Result[A]], A, M[A]],
+      cbfv: CanBuildFrom[M[ResultF[A]], Future[Result[A]], M[Future[Result[A]]]],
+      exc: ExecutionContext): ResultF[M[A]] = {
+
+      val c = cbfv(in)
+      in.foreach(x => c += x.run)
+      Result.sequenceF(c.result)
     }
   }
 }
