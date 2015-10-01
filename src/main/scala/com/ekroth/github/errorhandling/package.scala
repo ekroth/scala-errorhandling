@@ -18,6 +18,12 @@ package object errorhandling {
     def reason: String
   }
 
+  object Error {
+    final case class Collection(errors: Seq[Error]) extends Error {
+      override def reason = errors.map(_.reason).mkString
+    }
+  }
+
   type Result[A] = Error \/ A
   type ResultF[A] = EitherT[Future, Error, A]
 
@@ -36,25 +42,29 @@ package object errorhandling {
     def okF[A](x: Future[Result[A]]): ResultF[A] = EitherT(x)
 
     /** Transforms a `TraversableOnce[Result[A]]` into a `Result[TraversableOnce[A]]`.
-     *  Useful for reducing many `Result`s into a single `ResultF`. Stops at the first failed
-     *  `Result`.
+     *  Useful for reducing many `Result`s into a single `ResultF`. In case of error the
+     *  `Result` will contain an `Error.Collection`, containing all errors.
      */
     def sequence[A, M[X] <: TraversableOnce[X]](in: M[Result[A]])(implicit cbf: CanBuildFrom[M[Result[A]], A, M[A]]): Result[M[A]] = {
       in.foldLeft(Result.ok(cbf(in))) {
 
-        case (r @ -\/(_), _) => r
+        case (r @ -\/(Error.Collection(errors)), a) => a match {
+          case -\/(e) => -\/(Error.Collection(errors :+ e))
+          case _ => r
+        }
 
         case (\/-(y), a) => a match {
-          case x @ -\/(_) => x
+          case -\/(x) => Error.Collection(Seq(x)).left
           case \/-(x) => (y += x).right
         }
+
+        case (r @ -\/(_), _) => ???
 
       } map (_.result())
     }
 
     /** Transforms a `TraversableOnce[Future[Result[A]]]` into a `ResultF[TraversableOnce[A]]`.
-     *  Useful for reducing many `Result`s into a single `Result`. Stops at the first failed
-     *  `Result`.
+     *  Useful for reducing many `Result`s into a single `Result`. See `sequence`.
      */
     def sequenceF[A, M[X] <: TraversableOnce[X]](in: M[Future[Result[A]]])(implicit
       cbff: CanBuildFrom[M[Future[Result[A]]], Result[A], M[Result[A]]],
@@ -65,7 +75,7 @@ package object errorhandling {
       } yield Result.sequence(seq)
     }
 
-    /** Run all `ResultF` in a `TraversableOnce[ResultF[A]]`. */
+    /** Run all `ResultF` in a `TraversableOnce[ResultF[A]]`. See `sequenceF`. */
     def run[A, M[X] <: TraversableOnce[X]](in: M[ResultF[A]])(implicit
       cbff: CanBuildFrom[M[Future[Result[A]]], Result[A], M[Result[A]]],
       cbfr: CanBuildFrom[M[Result[A]], A, M[A]],
