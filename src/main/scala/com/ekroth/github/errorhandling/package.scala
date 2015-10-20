@@ -8,6 +8,7 @@ package com.github.ekroth
 
 package object errorhandling {
 
+  import scala.collection.immutable.Seq
   import scala.collection.generic.CanBuildFrom
   import scala.concurrent.{ Future, ExecutionContext }
 
