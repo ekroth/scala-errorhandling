@@ -23,6 +23,17 @@ package object errorhandling {
     final case class Collection(errors: Seq[Error]) extends Error {
       override def reason = errors.map(_.reason).mkString
     }
+    final case class Thrown(e: Exception) extends Error {
+      override def reason = e.toString
+    }
+    final case class Unknown(reason: String) extends Error
+    final case class Usage(reason: String) extends Error
+  }
+
+  trait Errors {
+    val Collection = Error.Collection
+    val Thrown = Error.Thrown
+    val Unknown = Error.Unknown
   }
 
   type Result[A] = Error \/ A
