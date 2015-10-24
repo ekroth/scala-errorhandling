@@ -41,17 +41,31 @@ package object errorhandling {
 
   object Result {
 
+    /** Construct an OK `Result[A]`, alias to `ok`. */
+    def apply[A](x: A): Result[A] = ok(x)
+
     /** Construct a failed `Result[A]`. */
     def fail[A](e: Error): Result[A] = e.left
 
     /** Construct an OK `Result[A]`. */
     def ok[A](x: A): Result[A] = x.right
 
-    /** Construct a failed `ResultF[A]`. */
-    def failF[A](e: Error): ResultF[A] = EitherT(Future.successful(e.left))
 
-    /** Construct an OK `ResultF[A]`. */
-    def okF[A](x: Future[Result[A]]): ResultF[A] = EitherT(x)
+    /** Construct a `ResultF[A]` from a `Future[Result[A]]`. */
+    def async[A](x: Future[Result[A]]): ResultF[A] = EitherT(x)
+
+    /** Construct a failed `ResultF[A]`. */
+    def failF[A](e: Future[Error])(implicit exc: ExecutionContext): ResultF[A] = EitherT(e.map(_.left))
+
+    /** Construct a failed `ResultF[A]` from an `Error`. */
+    def failF[A](e: Error)(implicit exc: ExecutionContext): ResultF[A] = failF(Future.successful(e))
+
+    /** Construct an OK `ResultF[A]` from a `Future[A]`. */
+    def okF[A](x: Future[A])(implicit exc: ExecutionContext): ResultF[A] = EitherT(x.map(_.right))
+
+    /** Construct an OK `ResultF[A]` from an `A`. */
+    def okF[A](x: A)(implicit exc: ExecutionContext): ResultF[A] = okF(Future.successful(x))
+
 
     /** Transforms a `TraversableOnce[Result[A]]` into a `Result[TraversableOnce[A]]`.
      *  Useful for reducing many `Result`s into a single `ResultF`. In case of error the
