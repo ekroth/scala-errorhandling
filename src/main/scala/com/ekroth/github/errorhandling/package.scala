@@ -37,7 +37,8 @@ package object errorhandling {
   }
 
   type Result[A] = Error \/ A
-  type ResultF[A] = EitherT[Future, Error, A]
+  type ResultT[M[_], A] = EitherT[M, Error, A]
+  type ResultF[A] = ResultT[Future, A]
 
   object Result {
 
@@ -50,6 +51,9 @@ package object errorhandling {
     /** Construct an OK `Result[A]`. */
     def ok[A](x: A): Result[A] = x.right
 
+
+    /** Construct a `ResultF[A]` from a `Result[A]`. */
+    def async[A](x: Result[A]): ResultF[A] = EitherT(Future.successful(x))
 
     /** Construct a `ResultF[A]` from a `Future[Result[A]]`. */
     def async[A](x: Future[Result[A]]): ResultF[A] = EitherT(x)
